@@ -1,6 +1,5 @@
 """Simple prompt templates for the agent."""
 
-from typing import Dict, Any
 
 
 class PromptTemplate:

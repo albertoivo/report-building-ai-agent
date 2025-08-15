@@ -1,6 +1,6 @@
 """Simple workflow implementation for the agent."""
 
-from typing import Callable, Dict, Any
+from typing import Callable, Dict
 from .state import AgentState
 from .nodes import classify_intent, qa_agent, summarization_agent, calculation_agent, update_memory
 

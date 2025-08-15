@@ -1,7 +1,6 @@
 """Calculator tool for mathematical calculations."""
 
 import re
-from typing import Any
 
 
 def tool(func):

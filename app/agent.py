@@ -1,10 +1,8 @@
 """Integrated agent that combines all components."""
 
 from datetime import datetime
-from typing import Optional
-from .schemas import AnswerResponse, UserIntent
-from .workflow import AgentState
-from .prompts import intent_classification_prompt, get_chat_prompt_template, SimpleLLMSimulator
+from .schemas import AnswerResponse
+from .prompts import intent_classification_prompt, SimpleLLMSimulator
 from .tools import calculate
 from .logging import SimpleLogger
 
@@ -20,7 +18,7 @@ class IntegratedAgent:
     def process_input(self, user_input: str) -> AnswerResponse:
         """Process user input through the complete pipeline."""
         # Start session
-        session_id = self.logger.start_session(user_input)
+        self.logger.start_session(user_input)
         
         try:
             # Step 1: Classify intent
