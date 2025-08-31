@@ -1,8 +1,8 @@
 """Prompts module for the report-building agent."""
 
+from langchain_core.prompts import ChatPromptTemplate
 from .templates import (
     PromptTemplate,
-    ChatPromptTemplate,
     intent_classification_prompt,
     get_chat_prompt_template,
     QA_SYSTEM_PROMPT,
