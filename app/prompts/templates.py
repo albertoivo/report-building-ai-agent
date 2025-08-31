@@ -16,23 +16,54 @@ class PromptTemplate:
         return self.template.format(**kwargs)
 
 
-# Intent Classification Prompt
+# Enhanced Intent Classification Prompt with sophisticated language understanding
 intent_classification_prompt = PromptTemplate(
     input_variables=["user_input", "conversation_history"],
     template="""
-You are an intelligent assistant. Classify the user's intent based on the input below:
+You are an expert intent classification system with sophisticated language understanding capabilities. 
+Your task is to accurately classify user intents based on their input and conversation context.
 
-User Input: {user_input}
-Conversation History: {conversation_history}
+INTENT CATEGORIES:
 
-Possible intents: "qa", "summarization", "calculation".
+1. **CALCULATION** - Mathematical operations, computations, numeric problems
+   Examples: "2 + 2", "calculate 15% of 200", "what's 5 times 8", "solve x + 5 = 10"
+   Keywords: calculate, compute, solve, math, equation, numbers, operators (+, -, *, /, %), percentage
 
-Please provide the intent type, confidence score (0-1), and reasoning for your classification.
+2. **SUMMARIZATION** - Requests to summarize text, conversations, or documents
+   Examples: "summarize this", "give me a summary", "what's the main point", "recap our conversation"
+   Keywords: summarize, summary, recap, overview, main points, key takeaways, brief
 
-Response format:
-Intent: [intent_type]
-Confidence: [score]
-Reasoning: [explanation]
+3. **QA (Question-Answering)** - General questions, information requests, explanations
+   Examples: "what is AI?", "how does this work?", "tell me about...", "explain the concept"
+   Keywords: what, how, why, when, where, who, explain, define, tell me, describe
+
+CLASSIFICATION INSTRUCTIONS:
+
+1. **Primary Analysis**: Look for explicit keywords and phrases that indicate intent
+2. **Context Analysis**: Consider conversation history for ambiguous cases
+3. **Semantic Understanding**: Understand the underlying purpose, not just surface words
+4. **Confidence Assessment**: 
+   - HIGH (0.8-1.0): Clear keywords and unambiguous intent
+   - MEDIUM (0.5-0.7): Some indicators but context-dependent 
+   - LOW (0.0-0.4): Ambiguous or unclear intent
+
+USER INPUT: {user_input}
+CONVERSATION HISTORY: {conversation_history}
+
+CLASSIFICATION RULES:
+- If input contains mathematical expressions or computation requests → CALCULATION
+- If input asks for summary, recap, or main points → SUMMARIZATION  
+- If input is a general question or information request → QA
+- Consider conversation context for ambiguous cases
+- Default to QA for unclear cases
+
+Provide your classification in the following structured format:
+
+Intent: [CALCULATION|SUMMARIZATION|QA]
+Confidence: [0.0-1.0]
+Reasoning: [Detailed explanation of classification decision including key indicators, context considerations, and confidence factors]
+Keywords_Found: [List specific keywords or phrases that influenced the decision]
+Context_Influence: [How conversation history affected the classification, if applicable]
 """
 )
 

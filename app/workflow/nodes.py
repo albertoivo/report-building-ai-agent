@@ -5,34 +5,34 @@ from langgraph.graph.message import add_messages
 from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
 from ..schemas import UserIntent, AnswerResponse
 from ..prompts import SimpleLLMSimulator
-from ..tools import calculate, langchain_calculate
+from ..tools import langchain_calculate
+from ..services import IntentClassifier
 
 llm = SimpleLLMSimulator()
+intent_classifier = IntentClassifier()
 
 def classify_intent(state):
-    """Classify user intent and add to messages."""
+    """Classify user intent using enhanced LLM-based classification."""
     user_input = state["user_input"]
+    messages = state.get("messages", [])
     
     # Add user message to conversation
     user_message = HumanMessage(content=user_input)
     
-    # Classify intent
-    if any(word in user_input.lower() for word in ["calculate", "compute", "+", "-", "*", "/"]):
-        intent_type = "calculation"
-    elif any(word in user_input.lower() for word in ["summarize", "summary"]):
-        intent_type = "summarization"
-    else:
-        intent_type = "qa"
+    # Build conversation history for context
+    conversation_history = ""
+    for msg in messages[-10:]:  # Last 10 messages for context
+        if isinstance(msg, HumanMessage):
+            conversation_history += f"User: {msg.content}\n"
+        elif isinstance(msg, AIMessage):
+            conversation_history += f"Assistant: {msg.content}\n"
     
-    intent = UserIntent(
-        intent_type=intent_type,
-        confidence=0.9,
-        reasoning=f"Classified as {intent_type} based on keywords"
-    )
+    # Use enhanced intent classification
+    intent = intent_classifier.classify_with_fallback(user_input, conversation_history)
     
     # Add system message about intent classification
     system_message = SystemMessage(
-        content=f"Intent classified as: {intent_type} (confidence: {intent.confidence})"
+        content=f"Intent classified as: {intent.intent_type} (confidence: {intent.confidence:.2f}) - {intent.reasoning}"
     )
     
     return {
