@@ -70,6 +70,9 @@ def qa_agent(state):
             else:
                 answer = f"I understand you're asking about: {user_input}. How can I help you with that?"
     
+    logger = state.get("logger")
+    logger.log_tool_call("qa", {"question": user_input}, answer)
+    
     response = AnswerResponse(
         question=user_input,
         answer=answer,
@@ -77,7 +80,6 @@ def qa_agent(state):
         confidence=0.95,
         timestamp=datetime.now()
     )
-    
     return {
         "response": response,
         "current_step": "qa_agent",
@@ -102,6 +104,9 @@ def calculation_agent(state):
     # Use calculator tool
     result = langchain_calculate.invoke({"expression": expression})
     
+    logger = state.get("logger")
+    logger.log_tool_call("calculator", {"expression": expression}, result)
+    
     response = AnswerResponse(
         question=user_input,
         answer=result,
@@ -109,7 +114,6 @@ def calculation_agent(state):
         confidence=1.0,
         timestamp=datetime.now()
     )
-    
     return {
         "response": response,
         "current_step": "calculation_agent",
@@ -127,6 +131,9 @@ def summarization_agent(state):
     else:
         summary = f"Summary: {user_input[:100]}..."
     
+    logger = state.get("logger")
+    logger.log_tool_call("summarization", {"input": user_input}, summary)
+    
     response = AnswerResponse(
         question=user_input,
         answer=summary,
@@ -134,7 +141,6 @@ def summarization_agent(state):
         confidence=0.8,
         timestamp=datetime.now()
     )
-    
     return {
         "response": response,
         "current_step": "summarization_agent",
