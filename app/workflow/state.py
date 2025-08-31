@@ -1,13 +1,16 @@
-from pydantic import BaseModel
-from typing import Optional, List, Dict, Any
+from typing import TypedDict, Optional, List, Dict, Any, Annotated
+from langgraph.graph import add_messages
 from ..schemas import UserIntent, AnswerResponse
 
 
-class AgentState(BaseModel):
-    """State schema for the agent workflow."""
+class AgentState(TypedDict):
+    """State schema for the agent workflow compatible with LangGraph."""
     
     user_input: str
-    intent: Optional[UserIntent] = None
-    response: Optional[AnswerResponse] = None
-    memory: List[Dict[str, Any]] = []
-    current_step: str = "start"
+    intent: Optional[UserIntent]
+    response: Optional[AnswerResponse]
+    memory: List[Dict[str, Any]]
+    current_step: str
+    
+    # LangGraph state annotations for conversation handling
+    messages: Annotated[List[Dict[str, Any]], add_messages]

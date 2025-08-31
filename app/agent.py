@@ -2,6 +2,7 @@
 
 from datetime import datetime
 from .schemas import AnswerResponse
+from .workflow import create_workflow, AgentState
 from .prompts import intent_classification_prompt, SimpleLLMSimulator
 from .tools import calculate
 from .logging import SimpleLogger
@@ -14,64 +15,44 @@ class IntegratedAgent:
         self.llm = SimpleLLMSimulator()
         self.logger = SimpleLogger()
         self.memory = []
+        self.workflow = create_workflow()  # Create compiled LangGraph workflow
     
     def process_input(self, user_input: str) -> AnswerResponse:
-        """Process user input through the complete pipeline."""
+        """Process user input through the LangGraph workflow."""
         # Start session
-        self.logger.start_session(user_input)
+        session_id = self.logger.start_session(user_input)
         
         try:
-            # Step 1: Classify intent
-            conversation_history = str(self.memory[-3:])  # Last 3 interactions
-            classification_prompt = intent_classification_prompt.format(
+            # Create initial state with existing memory
+            initial_state = AgentState(
                 user_input=user_input,
-                conversation_history=conversation_history
+                intent=None,
+                response=None,
+                memory=self.memory.copy(),  # Pass existing memory to workflow
+                current_step="start"
             )
             
-            intent = self.llm.classify_intent(classification_prompt)
-            self.logger.log_tool_call("classify_intent", {"user_input": user_input}, str(intent.intent_type))
+            # Run the LangGraph workflow
+            final_state = self.workflow.invoke(initial_state)
             
-            # Step 2: Generate response based on intent
-            response_text = ""
-            sources = []
-            confidence = intent.confidence
-            
-            if intent.intent_type == "qa":
-                response_text = self._handle_qa(user_input)
-                sources = ["knowledge_base"]
-                
-            elif intent.intent_type == "summarization":
-                response_text = self._handle_summarization(user_input)
-                sources = ["document_processor"]
-                
-            elif intent.intent_type == "calculation":
-                response_text = self._handle_calculation(user_input)
-                sources = ["calculator_tool"]
-                
+            # Extract response from final state
+            if final_state["response"]:
+                response = final_state["response"]
             else:
-                response_text = "I'm not sure how to help with that."
-                sources = ["default"]
-                confidence = 0.3
+                # Fallback response if workflow didn't generate one
+                response = AnswerResponse(
+                    question=user_input,
+                    answer="I'm sorry, I couldn't process your request.",
+                    sources=["error_handler"],
+                    confidence=0.0,
+                    timestamp=datetime.now()
+                )
             
-            # Step 3: Create response
-            response = AnswerResponse(
-                question=user_input,
-                answer=response_text,
-                sources=sources,
-                confidence=confidence,
-                timestamp=datetime.now()
-            )
+            # Update memory with the interaction
+            self.memory = final_state["memory"]  # Replace with updated memory from workflow
             
-            # Step 4: Update memory
-            self.memory.append({
-                "user_input": user_input,
-                "intent": intent.intent_type,
-                "response": response_text,
-                "timestamp": datetime.now().isoformat()
-            })
-            
-            # End session
-            self.logger.end_session(response_text)
+            # Log the session
+            self.logger.end_session(response.answer)
             
             return response
             
