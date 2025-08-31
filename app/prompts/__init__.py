@@ -1,5 +1,3 @@
-"""Prompts module for the report-building agent."""
-
 from langchain_core.prompts import ChatPromptTemplate
 from .templates import (
     PromptTemplate,
@@ -10,7 +8,7 @@ from .templates import (
     CALCULATION_SYSTEM_PROMPT,
     DEFAULT_SYSTEM_PROMPT
 )
-from .llm_simulator import SimpleLLMSimulator
+from .llm_gpt import OpenAIChatLLM
 
 __all__ = [
     "PromptTemplate",
@@ -21,5 +19,5 @@ __all__ = [
     "SUMMARIZATION_SYSTEM_PROMPT",
     "CALCULATION_SYSTEM_PROMPT",
     "DEFAULT_SYSTEM_PROMPT",
-    "SimpleLLMSimulator"
+    "OpenAIChatLLM"
 ]
