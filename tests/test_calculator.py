@@ -6,7 +6,7 @@ from pathlib import Path
 # Add parent directory to path so we can import app module
 sys.path.append(str(Path(__file__).parent.parent))
 
-from app.tools import calculate
+from app.tools import langchain_calculate
 
 
 def test_calculator():
@@ -27,7 +27,7 @@ def test_calculator():
     print("=== Calculator Tool Tests ===\n")
     
     for expression in test_cases:
-        result = calculate(expression)
+        result = langchain_calculate.invoke({"expression": expression})
         print(f"Expression: '{expression}'")
         print(f"Result: {result}")
         print("-" * 30)

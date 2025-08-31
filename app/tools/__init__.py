@@ -1,5 +1,5 @@
 """Tools module for the report-building agent."""
 
-from .calculator import calculate
+from .calculator import langchain_calculate
 
-__all__ = ["calculate"]
+__all__ = ["langchain_calculate"]

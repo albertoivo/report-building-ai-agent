@@ -5,7 +5,7 @@ from langgraph.graph.message import add_messages
 from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
 from ..schemas import UserIntent, AnswerResponse
 from ..prompts import SimpleLLMSimulator
-from ..tools import calculate
+from ..tools import calculate, langchain_calculate
 
 llm = SimpleLLMSimulator()
 
@@ -99,8 +99,9 @@ def calculation_agent(state):
     """Handle calculations using messages for context."""
     user_input = state["user_input"]
     
-    # Use calculator tool
-    result = calculate(user_input)
+    # Use LangChain calculator tool (with parameter schema)
+    # langchain_calculate expects a keyword argument 'expression'
+    result = langchain_calculate(expression=user_input)
     
     response = AnswerResponse(
         question=user_input,

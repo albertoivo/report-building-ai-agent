@@ -1,50 +1,44 @@
-"""Calculator tool for mathematical calculations."""
-
+from langchain_core.tools import tool
+from pydantic import BaseModel, Field
+from typing import Any
+from app.logging import SimpleLogger
 import re
 
-
-def tool(func):
-    """Simple tool decorator."""
-    func.is_tool = True
-    return func
-
-
 def is_valid_expression(expr: str) -> bool:
-    """Validate mathematical expression to allow only safe characters."""
-    # Allow only numbers, operators, parentheses, and whitespace
     allowed_pattern = r'^[0-9+\-*/().\s]+$'
     return bool(re.match(allowed_pattern, expr))
 
+class CalculatorInput(BaseModel):
+    expression: str = Field(..., description="A valid mathematical expression (e.g., '2 + 2')")
 
-@tool
-def calculate(expression: str) -> str:
-    """
-    Calculate mathematical expressions safely.
-    
-    Args:
-        expression: Mathematical expression as string (e.g., "2 + 3", "10 * 5")
-    
-    Returns:
-        Result as string or error message
-    """
-    # Remove whitespace
+logger = SimpleLogger()
+
+@tool(
+    "calculator",
+    args_schema=CalculatorInput,
+    return_direct=True,
+    description="Safely evaluate a mathematical expression provided as a string. Only numbers and operators (+, -, *, /, parentheses) are allowed. Returns the result as a string."
+)
+def langchain_calculate(expression: str) -> str:
+    """LangChain-compatible calculator tool with logging."""
     expression = expression.strip()
-    
-    # Validate expression
     if not is_valid_expression(expression):
-        return "Invalid expression. Only numbers and operators (+, -, *, /, parentheses) are allowed."
-    
-    # Check for empty expression
-    if not expression:
-        return "Error: Empty expression."
-    
-    try:
-        # Evaluate the expression safely
-        result = eval(expression)
-        return str(result)
-    except ZeroDivisionError:
-        return "Error: Division by zero."
-    except SyntaxError:
-        return "Error: Invalid syntax in expression."
-    except Exception as e:
-        return f"Error: {str(e)}"
+        result = "Invalid expression. Only numbers and operators (+, -, *, /, parentheses) are allowed."
+    elif not expression:
+        result = "Error: Empty expression."
+    else:
+        try:
+            result = str(eval(expression))
+        except ZeroDivisionError:
+            result = "Error: Division by zero."
+        except SyntaxError:
+            result = "Error: Invalid syntax in expression."
+        except Exception as e:
+            result = f"Error: {str(e)}"
+
+    logger.log_tool_call(
+        tool_name="calculator",
+        parameters={"expression": expression},
+        result=result
+    )
+    return result
