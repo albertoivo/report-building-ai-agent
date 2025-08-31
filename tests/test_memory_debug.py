@@ -46,7 +46,7 @@ def test_memory_step_by_step():
     print(f"Full response: '{response2.answer}'")
     
     # Test result
-    if "capital of france" in response2.answer.lower():
+    if "what is the capital of france" in response2.answer.lower():
         print("\n✅ Memory test PASSED!")
         return True
     else:
