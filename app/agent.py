@@ -32,6 +32,7 @@ class IntegratedAgent:
                 memory=self.memory.copy(),
                 current_step="start",
                 messages=self.conversation_messages.copy(),  # Use existing messages
+                logger=self.logger
             )
 
             # Run the LangGraph workflow
