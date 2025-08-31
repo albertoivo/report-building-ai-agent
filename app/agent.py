@@ -1,11 +1,9 @@
 """Integrated agent that combines all components."""
 
 from datetime import datetime
-from langchain_core.messages import HumanMessage, AIMessage
 from .schemas import AnswerResponse
 from .workflow import create_workflow, AgentState
-from .prompts import intent_classification_prompt, OpenAIChatLLM
-from .tools import langchain_calculate
+from .prompts import OpenAIChatLLM
 from .logging import SimpleLogger
 
 
@@ -23,7 +21,7 @@ class IntegratedAgent:
     def process_input(self, user_input: str) -> AnswerResponse:
         """Process user input through the LangGraph workflow."""
         # Start session
-        session_id = self.logger.start_session(user_input)
+        self.logger.start_session(user_input)
         
         try:
             # Create initial state with existing memory and messages

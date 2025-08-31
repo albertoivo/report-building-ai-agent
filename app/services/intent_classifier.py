@@ -1,6 +1,4 @@
 import re
-from typing import Optional
-from pydantic import BaseModel, Field
 from ..schemas import UserIntent
 from ..prompts import intent_classification_prompt
 from ..prompts.llm_gpt import OpenAIChatLLM

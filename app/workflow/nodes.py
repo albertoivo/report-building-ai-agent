@@ -1,6 +1,6 @@
 from datetime import datetime
 from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
-from ..schemas import UserIntent, AnswerResponse
+from ..schemas import AnswerResponse
 from ..tools import langchain_calculate
 from ..services import IntentClassifier
 
