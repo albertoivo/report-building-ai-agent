@@ -5,7 +5,7 @@ from langchain_core.messages import HumanMessage, AIMessage
 from .schemas import AnswerResponse
 from .workflow import create_workflow, AgentState
 from .prompts import intent_classification_prompt, SimpleLLMSimulator
-from .tools import calculate
+from .tools import langchain_calculate
 from .logging import SimpleLogger
 
 
