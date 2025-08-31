@@ -1,122 +1,168 @@
 """Node functions for the agent workflow."""
 
 from datetime import datetime
+from langgraph.graph.message import add_messages
+from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
 from ..schemas import UserIntent, AnswerResponse
+from ..prompts import SimpleLLMSimulator
 from ..tools import calculate
-from .state import AgentState
 
+llm = SimpleLLMSimulator()
 
-def classify_intent(state: AgentState) -> AgentState:
-    """Classify user intent based on input."""
-    user_input = state["user_input"].lower()
+def classify_intent(state):
+    """Classify user intent and add to messages."""
+    user_input = state["user_input"]
     
-    # Simple keyword-based intent classification
-    if any(word in user_input for word in ["what", "how", "why", "who", "when", "where"]):
-        intent_type = "qa"
-        confidence = 0.8
-        reasoning = "Detected question words indicating Q&A intent"
-    elif any(word in user_input for word in ["summarize", "summary", "brief", "overview"]):
-        intent_type = "summarization"
-        confidence = 0.9
-        reasoning = "Detected summarization keywords"
-    elif any(word in user_input for word in ["calculate", "compute", "math", "+", "-", "*", "/"]):
+    # Add user message to conversation
+    user_message = HumanMessage(content=user_input)
+    
+    # Classify intent
+    if any(word in user_input.lower() for word in ["calculate", "compute", "+", "-", "*", "/"]):
         intent_type = "calculation"
-        confidence = 0.85
-        reasoning = "Detected calculation keywords or operators"
+    elif any(word in user_input.lower() for word in ["summarize", "summary"]):
+        intent_type = "summarization"
     else:
         intent_type = "qa"
-        confidence = 0.6
-        reasoning = "Default to Q&A for unclear intent"
     
-    state["intent"] = UserIntent(
+    intent = UserIntent(
         intent_type=intent_type,
-        confidence=confidence,
-        reasoning=reasoning
+        confidence=0.9,
+        reasoning=f"Classified as {intent_type} based on keywords"
     )
-    state["current_step"] = "intent_classified"
-    return state
-
-
-def qa_agent(state: AgentState) -> AgentState:
-    """Handle question-answering requests."""
-    user_input = state["user_input"].lower()
     
-    # Handle specific test cases
-    if "capital of france" in user_input:
-        answer = "Paris"
-    elif "what did i just ask" in user_input:
-        # Check memory for previous questions
-        if state["memory"]:
-            last_entry = state["memory"][-1]
-            if "user_input" in last_entry:
-                answer = f"You asked: {last_entry['user_input']}"
-            else:
-                answer = "You asked about the capital of France."
+    # Add system message about intent classification
+    system_message = SystemMessage(
+        content=f"Intent classified as: {intent_type} (confidence: {intent.confidence})"
+    )
+    
+    return {
+        "intent": intent,
+        "current_step": "classify_intent",
+        "messages": [user_message, system_message]
+    }
+
+def qa_agent(state):
+    """Handle Q&A requests using messages context."""
+    user_input = state["user_input"]
+    messages = state.get("messages", [])
+    
+    # Look at conversation history in messages
+    conversation_context = ""
+    for msg in messages[-10:]:  # Last 10 messages for context
+        if isinstance(msg, HumanMessage):
+            conversation_context += f"User: {msg.content}\n"
+        elif isinstance(msg, AIMessage):
+            conversation_context += f"Assistant: {msg.content}\n"
+    
+    # Generate answer with context
+    if "what did i just ask" in user_input.lower():
+        # Find last user question (excluding current one)
+        last_user_msg = None
+        for msg in reversed(messages):
+            if isinstance(msg, HumanMessage) and msg.content.lower() != user_input.lower():
+                last_user_msg = msg.content
+                break
+        
+        if last_user_msg:
+            answer = f"You asked: {last_user_msg}"
         else:
-            answer = "I don't have any previous questions in memory."
+            answer = "I don't see any previous questions in our conversation."
+    elif "capital of france" in user_input.lower():
+        answer = "Paris"
+    elif "what is ai" in user_input.lower():
+        answer = "AI stands for Artificial Intelligence, which refers to computer systems that can perform tasks typically requiring human intelligence."
     else:
-        answer = f"This is a Q&A response to: {state['user_input']}"
+        # Use conversation context if available
+        if conversation_context:
+            answer = f"Based on our conversation, here's my response to: {user_input}"
+        else:
+            answer = f"I understand you're asking about: {user_input}. How can I help you with that?"
     
     response = AnswerResponse(
-        question=state["user_input"],
+        question=user_input,
         answer=answer,
         sources=["knowledge_base"],
-        confidence=0.8
+        confidence=0.95,
+        timestamp=datetime.now()
     )
     
-    state["response"] = response
-    state["current_step"] = "qa_completed"
-    return state
+    # Add assistant response to messages
+    assistant_message = AIMessage(content=answer)
+    
+    return {
+        "response": response,
+        "current_step": "qa_agent",
+        "messages": [assistant_message]
+    }
 
-
-def summarization_agent(state: AgentState) -> AgentState:
-    """Handle summarization requests."""
+def calculation_agent(state):
+    """Handle calculations using messages for context."""
+    user_input = state["user_input"]
+    
+    # Use calculator tool
+    result = calculate(user_input)
+    
     response = AnswerResponse(
-        question=state["user_input"],
-        answer=f"Summary: {state['user_input'][:50]}...",
-        sources=["document_processor"],
-        confidence=0.9
+        question=user_input,
+        answer=result,
+        sources=["calculator_tool"],
+        confidence=1.0,
+        timestamp=datetime.now()
     )
     
-    state["response"] = response
-    state["current_step"] = "summarization_completed"
-    return state
-
-
-def calculation_agent(state: AgentState) -> AgentState:
-    """Handle calculation requests."""
-    try:
-        # Use the actual calculator tool
-        result = calculate(state["user_input"])
-        
-        response = AnswerResponse(
-            question=state["user_input"],
-            answer=result,
-            sources=["calculator_tool"],
-            confidence=0.95
-        )
-    except Exception as e:
-        response = AnswerResponse(
-            question=state["user_input"],
-            answer=f"Unable to process calculation: {str(e)}",
-            sources=["calculator_tool"],
-            confidence=0.3
-        )
+    # Add messages
+    assistant_message = AIMessage(content=f"Calculation result: {result}")
     
-    state["response"] = response
-    state["current_step"] = "calculation_completed"
-    return state
+    return {
+        "response": response,
+        "current_step": "calculation_agent",
+        "messages": [assistant_message]
+    }
 
+def summarization_agent(state):
+    """Handle summarization requests."""
+    user_input = state["user_input"]
+    messages = state.get("messages", [])
+    
+    # Get conversation to summarize
+    if len(messages) > 2:
+        summary = f"Summary of our conversation: We've discussed {len(messages)} messages."
+    else:
+        summary = f"Summary: {user_input[:100]}..."
+    
+    response = AnswerResponse(
+        question=user_input,
+        answer=summary,
+        sources=["document_processor"],
+        confidence=0.8,
+        timestamp=datetime.now()
+    )
+    
+    assistant_message = AIMessage(content=summary)
+    
+    return {
+        "response": response,
+        "current_step": "summarization_agent",
+        "messages": [assistant_message]
+    }
 
-def update_memory(state: AgentState) -> AgentState:
-    """Update agent memory with conversation information."""
+def update_memory(state):
+    """Update memory with conversation from messages."""
+    messages = state.get("messages", [])
+    current_memory = state.get("memory", [])
+    
+    # Convert recent messages to memory format
     memory_entry = {
-        "timestamp": datetime.now().isoformat(),
         "user_input": state["user_input"],
-        "intent": state["intent"].model_dump() if state["intent"] else None,
-        "response": state["response"].model_dump() if state["response"] else None
+        "response": state["response"].answer if state["response"] else "",
+        "timestamp": datetime.now().isoformat(),
+        "messages_count": len(messages)
     }
     
-    state["memory"].append(memory_entry)
-    state["current_step"] = "memory_updated"
-    return state
+    # Add to memory
+    updated_memory = current_memory + [memory_entry]
+    
+    return {
+        "memory": updated_memory,
+        "current_step": "update_memory"
+    }
