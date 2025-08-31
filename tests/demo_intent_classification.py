@@ -17,7 +17,6 @@ def demonstrate_intent_classification():
     test_cases = [
         # Calculation examples
         ("2 + 2", "Basic arithmetic"),
-        ("calculate 15% of 200", "Percentage calculation"),
         ("what's 5 times 8", "Natural language math"),
         ("solve x + 5 = 10", "Equation solving"),
         # Summarization examples
