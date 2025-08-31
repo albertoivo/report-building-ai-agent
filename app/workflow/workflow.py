@@ -1,5 +1,3 @@
-"""LangGraph workflow implementation for the agent."""
-
 from typing import Callable, Dict, Literal
 from langgraph.graph import StateGraph, END
 from .state import AgentState
@@ -15,7 +13,7 @@ def should_continue(state: AgentState) -> Literal["qa_agent", "summarization_age
     elif state["intent"] and state["intent"].intent_type == "calculation":
         return "calculation_agent"
     else:
-        return "qa_agent"  # Default fallback
+        return "qa_agent"  # Default to Q&A agent
 
 
 def should_end(state: AgentState) -> Literal["__end__"]:

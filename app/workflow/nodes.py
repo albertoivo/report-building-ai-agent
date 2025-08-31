@@ -1,23 +1,15 @@
-"""Node functions for the agent workflow."""
-
 from datetime import datetime
-from langgraph.graph.message import add_messages
 from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
 from ..schemas import UserIntent, AnswerResponse
-from ..prompts import SimpleLLMSimulator
 from ..tools import langchain_calculate
 from ..services import IntentClassifier
 
-llm = SimpleLLMSimulator()
 intent_classifier = IntentClassifier()
 
 def classify_intent(state):
     """Classify user intent using enhanced LLM-based classification."""
     user_input = state["user_input"]
     messages = state.get("messages", [])
-    
-    # Add user message to conversation
-    user_message = HumanMessage(content=user_input)
     
     # Build conversation history for context
     conversation_history = ""
@@ -27,18 +19,16 @@ def classify_intent(state):
         elif isinstance(msg, AIMessage):
             conversation_history += f"Assistant: {msg.content}\n"
     
-    # Use enhanced intent classification
-    intent = intent_classifier.classify_with_fallback(user_input, conversation_history)
-    
-    # Add system message about intent classification
-    system_message = SystemMessage(
-        content=f"Intent classified as: {intent.intent_type} (confidence: {intent.confidence:.2f}) - {intent.reasoning}"
-    )
+    # Classify intent
+    intent = intent_classifier.classify_intent(user_input, conversation_history)
     
     return {
         "intent": intent,
         "current_step": "classify_intent",
-        "messages": [user_message, system_message]
+        "messages": [
+            HumanMessage(content=user_input),
+            SystemMessage(content=f"Intent classified as: {intent.intent_type} (confidence: {intent.confidence:.2f}) - {intent.reasoning}")
+        ]
     }
 
 def qa_agent(state):
@@ -46,15 +36,7 @@ def qa_agent(state):
     user_input = state["user_input"]
     messages = state.get("messages", [])
     
-    # Look at conversation history in messages
-    conversation_context = ""
-    for msg in messages[-10:]:  # Last 10 messages for context
-        if isinstance(msg, HumanMessage):
-            conversation_context += f"User: {msg.content}\n"
-        elif isinstance(msg, AIMessage):
-            conversation_context += f"Assistant: {msg.content}\n"
-    
-    # Generate answer with context
+    # Special case: memory recall
     if "what did i just ask" in user_input.lower():
         # Find last user question (excluding current one)
         last_user_msg = None
@@ -62,21 +44,31 @@ def qa_agent(state):
             if isinstance(msg, HumanMessage) and msg.content.lower() != user_input.lower():
                 last_user_msg = msg.content
                 break
-        
-        if last_user_msg:
-            answer = f"You asked: {last_user_msg}"
-        else:
-            answer = "I don't see any previous questions in our conversation."
-    elif "capital of france" in user_input.lower():
-        answer = "Paris"
-    elif "what is ai" in user_input.lower():
-        answer = "AI stands for Artificial Intelligence, which refers to computer systems that can perform tasks typically requiring human intelligence."
+        answer = f"You asked: {last_user_msg}" if last_user_msg else "I don't see any previous questions in our conversation."
     else:
-        # Use conversation context if available
-        if conversation_context:
-            answer = f"Based on our conversation, here's my response to: {user_input}"
-        else:
-            answer = f"I understand you're asking about: {user_input}. How can I help you with that?"
+        # For all other questions, use OpenAI via the intent classifier's LLM
+        # Build conversation context
+        conversation_context = ""
+        for msg in messages[-10:]:
+            if isinstance(msg, HumanMessage):
+                conversation_context += f"User: {msg.content}\n"
+            elif isinstance(msg, AIMessage):
+                conversation_context += f"Assistant: {msg.content}\n"
+        
+        # Use the LLM to generate the answer
+        try:
+            # Create a simple prompt for Q&A
+            prompt = f"Please answer this question: {user_input}"
+            if conversation_context:
+                prompt += f"\n\nConversation context:\n{conversation_context}"
+            
+            answer = intent_classifier.llm.generate(prompt)
+        except Exception:
+            # Fallback if OpenAI fails
+            if conversation_context:
+                answer = f"Based on our conversation, here's my response to: {user_input}"
+            else:
+                answer = f"I understand you're asking about: {user_input}. How can I help you with that?"
     
     response = AnswerResponse(
         question=user_input,
@@ -86,22 +78,18 @@ def qa_agent(state):
         timestamp=datetime.now()
     )
     
-    # Add assistant response to messages
-    assistant_message = AIMessage(content=answer)
-    
     return {
         "response": response,
         "current_step": "qa_agent",
-        "messages": [assistant_message]
+        "messages": [AIMessage(content=answer)]
     }
 
 def calculation_agent(state):
     """Handle calculations using messages for context."""
     user_input = state["user_input"]
     
-    # Use LangChain calculator tool (with parameter schema)
-    # langchain_calculate expects a keyword argument 'expression'
-    result = langchain_calculate(expression=user_input)
+    # Use calculator tool
+    result = langchain_calculate.invoke({"expression": user_input})
     
     response = AnswerResponse(
         question=user_input,
@@ -111,13 +99,10 @@ def calculation_agent(state):
         timestamp=datetime.now()
     )
     
-    # Add messages
-    assistant_message = AIMessage(content=f"Calculation result: {result}")
-    
     return {
         "response": response,
         "current_step": "calculation_agent",
-        "messages": [assistant_message]
+        "messages": [AIMessage(content=f"Calculation result: {result}")]
     }
 
 def summarization_agent(state):
@@ -125,7 +110,7 @@ def summarization_agent(state):
     user_input = state["user_input"]
     messages = state.get("messages", [])
     
-    # Get conversation to summarize
+    # Generate summary
     if len(messages) > 2:
         summary = f"Summary of our conversation: We've discussed {len(messages)} messages."
     else:
@@ -139,12 +124,10 @@ def summarization_agent(state):
         timestamp=datetime.now()
     )
     
-    assistant_message = AIMessage(content=summary)
-    
     return {
         "response": response,
         "current_step": "summarization_agent",
-        "messages": [assistant_message]
+        "messages": [AIMessage(content=summary)]
     }
 
 def update_memory(state):
@@ -152,7 +135,7 @@ def update_memory(state):
     messages = state.get("messages", [])
     current_memory = state.get("memory", [])
     
-    # Convert recent messages to memory format
+    # Add memory entry
     memory_entry = {
         "user_input": state["user_input"],
         "response": state["response"].answer if state["response"] else "",
@@ -160,10 +143,7 @@ def update_memory(state):
         "messages_count": len(messages)
     }
     
-    # Add to memory
-    updated_memory = current_memory + [memory_entry]
-    
     return {
-        "memory": updated_memory,
+        "memory": current_memory + [memory_entry],
         "current_step": "update_memory"
     }
