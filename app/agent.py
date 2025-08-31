@@ -4,7 +4,7 @@ from datetime import datetime
 from langchain_core.messages import HumanMessage, AIMessage
 from .schemas import AnswerResponse
 from .workflow import create_workflow, AgentState
-from .prompts import intent_classification_prompt, SimpleLLMSimulator
+from .prompts import intent_classification_prompt, OpenAIChatLLM
 from .tools import langchain_calculate
 from .logging import SimpleLogger
 
@@ -13,7 +13,8 @@ class IntegratedAgent:
     """Simple integrated agent combining all components."""
     
     def __init__(self):
-        self.llm = SimpleLLMSimulator()
+        # Use OpenAI GPT - requires OPENAI_API_KEY environment variable
+        self.llm = OpenAIChatLLM()
         self.workflow = create_workflow()
         self.logger = SimpleLogger()
         self.memory = []
