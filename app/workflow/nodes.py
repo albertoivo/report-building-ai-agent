@@ -24,6 +24,7 @@ def classify_intent(state):
     intent = intent_classifier.classify_intent(user_input, conversation_history)
 
     return {
+        **state,
         "intent": intent,
         "current_step": "classify_intent",
         "messages": [
@@ -31,7 +32,7 @@ def classify_intent(state):
             SystemMessage(
                 content=f"Intent classified as: {intent.intent_type} (confidence: {intent.confidence:.2f}) - {intent.reasoning}"
             ),
-        ],
+        ]
     }
 
 
@@ -94,9 +95,10 @@ def qa_agent(state):
         timestamp=datetime.now(),
     )
     return {
+        **state,
         "response": response,
         "current_step": "qa_agent",
-        "messages": [AIMessage(content=answer)],
+        "messages": [AIMessage(content=answer)]
     }
 
 
@@ -129,9 +131,10 @@ def calculation_agent(state):
         timestamp=datetime.now(),
     )
     return {
+        **state,
         "response": response,
         "current_step": "calculation_agent",
-        "messages": [AIMessage(content=f"Calculation result: {result}")],
+        "messages": [AIMessage(content=f"Calculation result: {result}")]
     }
 
 
@@ -159,9 +162,10 @@ def summarization_agent(state):
         timestamp=datetime.now(),
     )
     return {
+        **state,
         "response": response,
         "current_step": "summarization_agent",
-        "messages": [AIMessage(content=summary)],
+        "messages": [AIMessage(content=summary)]
     }
 
 
@@ -178,4 +182,8 @@ def update_memory(state):
         "messages_count": len(messages),
     }
 
-    return {"memory": current_memory + [memory_entry], "current_step": "update_memory"}
+    return {
+        **state,
+        "memory": current_memory + [memory_entry],
+        "current_step": "update_memory"
+    }
