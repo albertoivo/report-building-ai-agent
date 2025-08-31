@@ -2,7 +2,7 @@ from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 
 
 class PromptTemplate:
-    """Simple prompt template class for backward compatibility."""
+    """Simple prompt template class."""
     
     def __init__(self, input_variables: list, template: str):
         self.input_variables = input_variables
@@ -18,7 +18,7 @@ intent_classification_prompt = PromptTemplate(
     input_variables=["user_input", "conversation_history"],
     template="""Classify user intent:
 
-CALCULATION: Math operations (+, -, *, /, %)
+CALCULATION: Math operations (+, -, *, /)
 SUMMARIZATION: Summary requests  
 QA: Questions, information requests
 
