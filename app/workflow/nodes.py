@@ -88,8 +88,19 @@ def calculation_agent(state):
     """Handle calculations using messages for context."""
     user_input = state["user_input"]
     
+    # Extract mathematical expression from input
+    # Remove common prefixes like "calculate", "compute", etc.
+    expression = user_input.lower()
+    for prefix in ["calculate", "compute", "solve", "what is", "what's"]:
+        if expression.startswith(prefix):
+            expression = expression[len(prefix):].strip()
+            break
+    
+    # Remove question marks and other non-mathematical characters at the end
+    expression = expression.rstrip("?!.")
+    
     # Use calculator tool
-    result = langchain_calculate.invoke({"expression": user_input})
+    result = langchain_calculate.invoke({"expression": expression})
     
     response = AnswerResponse(
         question=user_input,

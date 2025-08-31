@@ -45,7 +45,7 @@ def demonstrate_intent_classification():
         print(f"Input: '{user_input}' ({description})")
         print("-" * 50)
         
-        result = classifier.classify_with_fallback(user_input)
+        result = classifier.classify_intent(user_input)
         
         print(f"Intent: {result.intent_type}")
         print(f"Confidence: {result.confidence:.2f}")
@@ -81,7 +81,7 @@ def demonstrate_context_influence():
         print(f"Input: '{ambiguous_input}'")
         print("-" * 40)
         
-        result = classifier.classify_with_fallback(ambiguous_input, context)
+        result = classifier.classify_intent(ambiguous_input, context)
         
         print(f"Intent: {result.intent_type}")
         print(f"Confidence: {result.confidence:.2f}")
