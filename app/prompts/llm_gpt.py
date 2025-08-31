@@ -21,7 +21,10 @@ class OpenAIChatLLM:
             model=self.model,
             temperature=0.2,
             messages=[
-                {"role": "system", "content": "You are an intent classification model. Return plain text with required fields."},
+                {
+                    "role": "system",
+                    "content": "You are an intent classification model. Return plain text with required fields.",
+                },
                 {"role": "user", "content": prompt_text},
             ],
         )

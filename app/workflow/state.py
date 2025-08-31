@@ -6,12 +6,12 @@ from ..schemas import UserIntent, AnswerResponse
 
 class AgentState(TypedDict):
     """State schema for the agent workflow compatible with LangGraph."""
-    
+
     user_input: str
     intent: Optional[UserIntent]
     response: Optional[AnswerResponse]
     memory: List[Dict[str, Any]]
     current_step: str
-    
+
     # LangGraph state annotations for conversation handling
     messages: Annotated[List[BaseMessage], add_messages]

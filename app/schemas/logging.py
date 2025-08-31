@@ -5,6 +5,7 @@ from pydantic import BaseModel, Field
 
 class ToolCall(BaseModel):
     """Schema for logging tool calls."""
+
     tool_name: str
     parameters: dict
     result: Optional[str] = None
@@ -13,6 +14,7 @@ class ToolCall(BaseModel):
 
 class SessionLog(BaseModel):
     """Schema for logging user sessions."""
+
     session_id: str
     user_query: str
     response: Optional[str] = None
