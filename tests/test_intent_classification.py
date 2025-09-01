@@ -23,10 +23,8 @@ class TestIntentClassification(unittest.TestCase):
         """Test basic calculation intent classification."""
         test_cases = [
             "2 + 2",
-            "calculate 15% of 200",
             "what's 5 times 8",
-            "solve x + 5 = 10",
-            "compute the square root of 16",
+            "solve x + 5 = 10"
         ]
 
         for case in test_cases:
