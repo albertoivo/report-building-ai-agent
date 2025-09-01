@@ -16,11 +16,21 @@ class PromptTemplate:
 # Intent Classification Prompt
 intent_classification_prompt = PromptTemplate(
     input_variables=["user_input", "conversation_history"],
-    template="""Classify user intent:
+    template="""You are an expert intent classifier. Analyze the user input and classify it into one of three categories.
 
-CALCULATION: Math operations (+, -, *, /)
-SUMMARIZATION: Summary requests  
-QA: Questions, information requests
+INTENT CATEGORIES:
+
+1. CALCULATION - Mathematical operations and computations
+   Examples: "calculate 2+3", "solve 5*7-3""
+   Keywords: calculate, compute, solve, math, add, subtract, multiply, divide
+
+2. SUMMARIZATION - Requests to summarize or condense information  
+   Examples: "summarize this text", "give me a brief overview", "what are the key points", "condense this information"
+   Keywords: summarize, summary, brief, overview, key points, condense, main ideas, highlights
+
+3. QA - Questions seeking information, explanations, or general assistance
+   Examples: "what is the capital of France", "how does photosynthesis work", "explain machine learning", "help me understand"
+   Keywords: what, how, why, where, when, who, explain, define, tell me, help, understand
 
 USER INPUT: {user_input}
 CONVERSATION: {conversation_history}
